@@ -7,4 +7,3 @@ if len(array_of_char) == 26:
    print("True")
 else:
    print("False")
-
