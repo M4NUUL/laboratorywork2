@@ -4,7 +4,6 @@ fun main() {
     
     val letters = mutableSetOf<Char>()
 
-    // Проходим по каждому символу строки
     for (char in input) {
         // Проверяем, является ли символ буквой латинского алфавита
         if (char.isLetter()) {

@@ -1,5 +1,4 @@
 fun main() {
-    // Считываем исходную строку
     print("Введите строку: ")
     val originalString = readLine() ?: ""
     if (originalString.isEmpty()) {
@@ -11,7 +10,6 @@ fun main() {
     var newString = ""
     var actualChar = originalString[0]
 
-    // Проходим по символам начиная со второго
     for (i in 1 until originalString.length) {
         if (originalString[i - 1] == originalString[i]) {
             countOfChar++ // Увеличиваем счётчик, если символы одинаковые
@@ -23,7 +21,6 @@ fun main() {
         }
     }
 
-    // Добавляем последний символ и его количество
     newString += actualChar
     newString += countOfChar.toString()
 
