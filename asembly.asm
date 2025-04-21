@@ -1,139 +1,127 @@
 section .data
-    prompt      db "Enter N: ", 0
-    result_msg  db "Result: ", 0
-    newline     db 10, 0
-
-section .bss
-    num     resb 4
-    result  resb 4
+    prompt      db 'Enter a string: ', 0
+    promptLen   equ $-prompt
+    newline     db 10
+    buffer      times 256 db 0
+    compressed  times 512 db 0
 
 section .text
     global _start
 
 _start:
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, prompt
-    mov edx, 9
-    int 0x80
+    ; write(1, prompt, promptLen)
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, prompt
+    mov rdx, promptLen
+    syscall
 
-    mov eax, 3
-    mov ebx, 0
-    mov ecx, num
-    mov edx, 4
-    int 0x80
+    ; read(0, buffer, 256)
+    mov rax, 0
+    mov rdi, 0
+    mov rsi, buffer
+    mov rdx, 256
+    syscall
 
-    mov ecx, num
-    xor eax, eax
-    xor ebx, ebx
+    ; rax = длина строки
+    mov rbx, rax
+    dec rbx                 ; исключаем символ новой строки
+    cmp rbx, 0
+    jle .exit
 
-parse_input:
-    mov bl, byte [ecx]
-    cmp bl, 10
-    je find_prime
-    sub bl, '0'
-    imul eax, eax, 10
-    add eax, ebx
-    inc ecx
-    jmp parse_input
+    ; указатели
+    mov rsi, buffer         
+    mov rdi, compressed    
+    xor rcx, rcx            ; счётчик символов
+    lodsb                   
+    mov dl, al              
+    mov rcx, 1
 
-find_prime:
-    mov esi, eax
-    mov edi, eax
-    mov ebx, eax
+.next:
+    lodsb
+    cmp al, 10              
+    je .flush
 
-search_loop:
-    push esi
-    call is_prime
-    cmp eax, 1
-    je found
-    pop esi
+    cmp al, dl
+    je .same
+    ; другой символ — записать
+    call write_symbol
+    mov dl, al              
+    mov rcx, 1
+    jmp .next
 
-    dec edi
-    push edi
-    call is_prime
-    cmp eax, 1
-    je found
-    pop edi
+.same:
+    inc rcx
+    jmp .next
 
-    inc ebx
-    push ebx
-    call is_prime
-    cmp eax, 1
-    je found
-    pop ebx
+.flush:
+    call write_symbol
 
-    jmp search_loop
+    ; вывод compressed
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, compressed
+    mov rdx, rdi
+    sub rdx, compressed
+    syscall
 
-found:
-    pop eax
-    sub esi, eax
-    mov [result], esi
+.exit:
+    ; вывод \n
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, newline
+    mov rdx, 1
+    syscall
 
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, result_msg
-    mov edx, 8
-    int 0x80
+    ; выход
+    mov rax, 60
+    xor rdi, rdi
+    syscall
 
-    mov eax, [result]
-    call print_number
-
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, newline
-    mov edx, 1
-    int 0x80
-
-    mov eax, 1
-    xor ebx, ebx
-    int 0x80
-
-is_prime:
-    pop ebx
-    cmp ebx, 2
-    jl not_prime
-    cmp ebx, 2
-    je prime
-
-    mov ecx, 2
-check_loop:
-    mov eax, ebx
-    xor edx, edx
-    div ecx
-    cmp edx, 0
-    je not_prime
-    inc ecx
-    mov eax, ecx
-    imul eax, eax
-    cmp eax, ebx
-    jle check_loop
-
-prime:
-    mov eax, 1
+; ======== Write (DL, RCX) -> to RDI buffer
+write_symbol:
+    mov [rdi], dl
+    inc rdi
+    mov rax, rcx
+    call int_to_str
     ret
 
-not_prime:
-    mov eax, 0
-    ret
+; ======== int_to_str: rax → str @ rdi
+int_to_str:
+    push rax
+    push rcx
+    push rdx
+    push rbx
 
-print_number:
-    mov ecx, 10
-    mov edi, num + 3
-    mov byte [edi], 0
-print_loop:
-    xor edx, edx
-    div ecx
-    add dl, '0'
-    dec edi
-    mov [edi], dl
-    test eax, eax
-    jnz print_loop
+    mov rcx, 0
+    mov rbx, 10
 
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, edi
-    mov edx, num + 4
-    sub edx, edi
-    int 0x80
+    test rax, rax
+    jnz .convert
+
+    mov byte [rdi], '0'
+    inc rdi
+    jmp .done
+
+.convert:
+.loop:
+    xor rdx, rdx
+    div rbx
+    push rdx
+    inc rcx
+    test rax, rax
+    jnz .loop
+
+.write:
+    pop rax
+    add al, '0'
+    mov [rdi], al
+    inc rdi
+    loop .write
+
+.done:
+    pop rbx
+    pop rdx
+    pop rcx
+    pop rax
     ret
