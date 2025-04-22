@@ -1,34 +1,33 @@
-import * as readline from 'readline';
+import { createInterface } from "node:readline";
 
-const rl3 = readline.createInterface({
+const rl = createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let repets = 0;
-let count = 0;
-let lastElement = -1;
-let repit = 0;
+const numbers: number[] = [];
 
-rl3.question('Введите количество чисел: ', (num) => {
-  repets = parseInt(num);
-  askNumber();
+const inputNumber = (n: number) => {
+  rl.question("Write your number >>> ", (answer) => {
+    numbers.push(Number.parseInt(answer));
+
+    !!n ? inputNumber(n - 1) : rl.close();
+  });
+};
+
+rl.question("Enter numbers >>> ", (answer) => {
+  const n = Number.parseInt(answer);
+
+  inputNumber(n - 1);
 });
 
-function askNumber() {
-  if (count >= repets) {
-    console.log(`Количество повторов: ${repit}`);
-    rl3.close();
-    return;
-  }
-
-  rl3.question('', (input) => {
-    const element = parseInt(input);
-    if (element === lastElement) {
-      repit++;
+rl.on("close", () => {
+  const result = numbers.reduce<{ count: number; prev?: number }>(
+    ({ count, prev }, value) => ({ count: prev === value ? count + 1 : count, prev: value }),
+    {
+      count: 0
     }
-    lastElement = element;
-    count++;
-    askNumber();
-  });
-}
+  ).count;
+
+  console.log(`Repeats: ${result}`);
+});
