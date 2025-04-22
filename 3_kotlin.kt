@@ -9,7 +9,25 @@ fun main() {
         if (element == lastElement) {
             repit++
         }
+        lastElemefun main() {
+    print("Enter the number of inputs: ")
+    val totalNumbers = readLine()?.toIntOrNull()
+
+    var lastElement: Int? = null
+    var repeatCount = 0
+
+    repeat(totalNumbers) {
+        print("Enter a number: ")
+        val element = readLine()?.toIntOrNull()
+
+        if (element == lastElement) {
+            repeatCount++
+        }
         lastElement = element
+    }
+
+    println("Number of repetitions: $repeatCount")
+}nt = element
     }
 
     println("Количество повторов: $repit")
