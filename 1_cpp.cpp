@@ -24,6 +24,10 @@ int main(){
             count_of_char = 1;
         }
     }
+    
+    new_str += actual_char;
+    new_str += to_string(count_of_char);
+
     if (new_str.length() < str.length())
     {
         cout << new_str << endl;

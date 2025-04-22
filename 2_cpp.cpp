@@ -28,7 +28,7 @@ bool Pangrammas_test(const string &str)
 int main(){
    string str;
    cout << "Введите строку Панграмму: ";
-   cin >> str;
+   getline(cin, str);
    cout << boolalpha << Pangrammas_test(str) << endl;
    return 0;
 }
