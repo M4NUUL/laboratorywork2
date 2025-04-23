@@ -1,127 +1,50 @@
-section .data
-    prompt      db 'Enter a string: ', 0
-    promptLen   equ $-prompt
-    newline     db 10
-    buffer      times 256 db 0
-    compressed  times 512 db 0
+section .bss
+    count_of_repits resd 1      ; Переменная для хранения количества повторений
+    last_element resd 1         ; Переменная для хранения последнего введенного числа
+    element resd 1              ; Переменная для хранения текущего числа
 
 section .text
     global _start
 
 _start:
-    ; write(1, prompt, promptLen)
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, prompt
-    mov rdx, promptLen
-    syscall
+    ; Инициализация переменных
+    mov dword [count_of_repits], 0  ; Счётчик повторов = 0
+    mov dword [last_element], -1    ; last_element инициализируем значением -1 (ничем не совпадает)
+    
+    ; Количество чисел задаём напрямую (например, 5)
+    mov eax, 5                     ; range = 5
+    mov ecx, eax                   ; Сохраняем range в ecx (цикл будет выполняться range раз)
 
-    ; read(0, buffer, 256)
-    mov rax, 0
-    mov rdi, 0
-    mov rsi, buffer
-    mov rdx, 256
-    syscall
+input_loop:
+    ; Эмуляция ввода элемента (например, 3, 3, 4, 5, 5)
+    ; Для упрощения примера, числовые значения задаются вручную
+    mov eax, 3                     ; Элемент = 3
+    ; mov eax, 4                     ; Элемент = 4
+    ; mov eax, 5                     ; Элемент = 5
+    ; mov eax, 5                     ; Элемент = 5
+    mov [element], eax
 
-    ; rax = длина строки
-    mov rbx, rax
-    dec rbx                 ; исключаем символ новой строки
-    cmp rbx, 0
-    jle .exit
+    ; Сравниваем текущий элемент с last_element
+    mov eax, [element]
+    mov ebx, [last_element]
+    cmp eax, ebx
+    jne no_repeat                  ; Если элемент не равен последнему, пропускаем
 
-    ; указатели
-    mov rsi, buffer         
-    mov rdi, compressed    
-    xor rcx, rcx            ; счётчик символов
-    lodsb                   
-    mov dl, al              
-    mov rcx, 1
+    ; Если элементы одинаковы, увеличиваем счётчик повторов
+    mov eax, [count_of_repits]
+    inc eax
+    mov [count_of_repits], eax
 
-.next:
-    lodsb
-    cmp al, 10              
-    je .flush
+no_repeat:
+    ; Обновляем last_element
+    mov eax, [element]
+    mov [last_element], eax
 
-    cmp al, dl
-    je .same
-    ; другой символ — записать
-    call write_symbol
-    mov dl, al              
-    mov rcx, 1
-    jmp .next
+    ; Переходим к следующему элементу (уменьшаем счетчик)
+    loop input_loop
 
-.same:
-    inc rcx
-    jmp .next
-
-.flush:
-    call write_symbol
-
-    ; вывод compressed
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, compressed
-    mov rdx, rdi
-    sub rdx, compressed
-    syscall
-
-.exit:
-    ; вывод \n
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, newline
-    mov rdx, 1
-    syscall
-
-    ; выход
-    mov rax, 60
-    xor rdi, rdi
-    syscall
-
-; ======== Write (DL, RCX) -> to RDI buffer
-write_symbol:
-    mov [rdi], dl
-    inc rdi
-    mov rax, rcx
-    call int_to_str
-    ret
-
-; ======== int_to_str: rax → str @ rdi
-int_to_str:
-    push rax
-    push rcx
-    push rdx
-    push rbx
-
-    mov rcx, 0
-    mov rbx, 10
-
-    test rax, rax
-    jnz .convert
-
-    mov byte [rdi], '0'
-    inc rdi
-    jmp .done
-
-.convert:
-.loop:
-    xor rdx, rdx
-    div rbx
-    push rdx
-    inc rcx
-    test rax, rax
-    jnz .loop
-
-.write:
-    pop rax
-    add al, '0'
-    mov [rdi], al
-    inc rdi
-    loop .write
-
-.done:
-    pop rbx
-    pop rdx
-    pop rcx
-    pop rax
-    ret
+    ; Завершаем программу, возвращая количество повторов в качестве exit code
+    mov eax, [count_of_repits]     ; Получаем количество повторений
+    mov ebx, eax                   ; Помещаем его в ebx (exit code)
+    mov eax, 1                     ; Системный вызов exit
+    int 0x80                       ; Вызов ядра
